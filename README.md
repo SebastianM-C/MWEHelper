@@ -1,10 +1,12 @@
-## MWEHelper
+# MWEHelper
+
+[![CI](https://github.com/SebastianM-C/MWEHelper/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/SebastianM-C/MWEHelper/actions/workflows/CI.yml)
 
 This package tries to make it easier to provide good MWEs when reporting bugs
 by automatically fetching the environment information and testing that your
 MWE reproduces the error in an isolated environment.
 
-The main interface is `bug_report(msg::String, mwe; filename::String = "bug_report.md")`,
+The main interface is `bug_report(msg::String, mwe; filename="bug_report.md", verbose=false, overwrite=false)`,
 which takes a message describing the bug and a minimal working example (MWE)
 that reproduces the error. `mwe` should be a function with no arguments that
 reproduces the error. The package tries to automatically grab all the dependencies
@@ -25,7 +27,7 @@ and used to generate a Markdown report with the bug description,
 MWE, and environment information (following the SciML issue template),
 and saves it to `filename` (defaults to `"bug_report.md"`).
 
-### Usage
+## Usage
 ```julia
 using MWEHelper
 
@@ -41,13 +43,13 @@ raises an error. If you have a MWE where a result is wrong but no error is raise
 you can still use `bug_report` by formulating your MWE using `@test result == expected`.
 This should both raise an error and also serve as a potential test case for package developers.
 
-### Limitations
+## Limitations
 This package uses CodeTracking.jl to introspect the MWE dependencies. It is recommended to load Revise.jl
 if you have the mwe defined only in the REPL.
 
 This package also requires Julia 1.12 or later.
 
-### Disclaimer
+## Disclaimer
 
 This package is experimental (especially the introspection parts that grab the mwe dependencies)
 and was written with help from Claude.

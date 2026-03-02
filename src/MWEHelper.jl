@@ -333,7 +333,7 @@ function bug_report(msg::String, mwe; filename::String = "bug_report.md", verbos
     test_env = mktempdir()
 
     current_project = Base.active_project()
-    pkg_versions = Dict(info.name => info.version for (_, info) in Pkg.dependencies())
+    pkg_deps = Dict(info.name => info for (_, info) in Pkg.dependencies())
     reproduction_note = ""
     pkg_st = ""
     pkg_m = ""
@@ -343,9 +343,16 @@ function bug_report(msg::String, mwe; filename::String = "bug_report.md", verbos
     try
         Pkg.activate(test_env; io = pkg_io)
         for pkg in all_pkgs
-            v = get(pkg_versions, pkg, nothing)
-            spec = v !== nothing ? Pkg.PackageSpec(name = pkg, version = v) : Pkg.PackageSpec(name = pkg)
-            Pkg.add(spec; io = pkg_io)
+            info = get(pkg_deps, pkg, nothing)
+            if info !== nothing && info.is_tracking_repo
+                Pkg.add(Pkg.PackageSpec(url = info.git_source, rev = info.git_revision); io = pkg_io)
+            elseif info !== nothing && info.is_tracking_path
+                @warn "Package $pkg is dev'd from $(info.source) — the MWE depends on local, unreleased code."
+                Pkg.develop(Pkg.PackageSpec(path = info.source); io = pkg_io)
+            else
+                spec = info !== nothing ? Pkg.PackageSpec(name = pkg, version = info.version) : Pkg.PackageSpec(name = pkg)
+                Pkg.add(spec; io = pkg_io)
+            end
         end
 
         write(joinpath(test_env, "mwe.jl"), full_mwe)

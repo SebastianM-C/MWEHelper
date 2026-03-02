@@ -1,5 +1,6 @@
 using Test
 using Logging: Warn
+import Pkg
 using MWEHelper
 
 include("mwe.jl")
@@ -77,5 +78,70 @@ include("mwe.jl")
         # MWE source and call included
         @test occursin("function mwe3", report)
         @test occursin("mwe3()", report)
+    end
+
+    @testset "bug_report with repo-tracked package" begin
+        test_env = mktempdir()
+        original_project = Base.active_project()
+        try
+            Pkg.activate(test_env; io = devnull)
+            Pkg.add(Pkg.PackageSpec(url = "https://github.com/JuliaLang/Example.jl", rev = "master"); io = devnull)
+            @eval using Example
+
+            mwe_file = tempname() * ".jl"
+            write(mwe_file, """
+            function mwe_repo_tracked()
+                Example.hello("world")
+                error("repo tracked test")
+            end
+            """)
+            include(mwe_file)
+
+            tmpfile = tempname() * ".md"
+            @test_logs min_level = Warn bug_report("test repo tracking", mwe_repo_tracked; filename = tmpfile)
+            report = read(tmpfile, String)
+            rm(tmpfile)
+
+            @test occursin("using Example", report)
+            @test occursin("function mwe_repo_tracked", report)
+            @test occursin("mwe_repo_tracked()", report)
+            # Verify the report shows the URL tracking
+            @test occursin("Example.jl#master", report)
+        finally
+            Pkg.activate(original_project; io = devnull)
+        end
+    end
+
+    @testset "bug_report with dev'd package" begin
+        test_env = mktempdir()
+        example_dir = mktempdir()
+        original_project = Base.active_project()
+        try
+            run(pipeline(`git clone https://github.com/JuliaLang/Example.jl $example_dir`, stdout = devnull, stderr = devnull))
+            Pkg.activate(test_env; io = devnull)
+            Pkg.develop(Pkg.PackageSpec(path = example_dir); io = devnull)
+
+            mwe_file = tempname() * ".jl"
+            write(mwe_file, """
+            function mwe_dev()
+                Example.hello("world")
+                error("dev test")
+            end
+            """)
+            include(mwe_file)
+
+            tmpfile = tempname() * ".md"
+            @test_logs (:warn, r"dev'd") min_level = Warn bug_report("test dev tracking", mwe_dev; filename = tmpfile)
+            report = read(tmpfile, String)
+            rm(tmpfile)
+
+            @test occursin("using Example", report)
+            @test occursin("function mwe_dev", report)
+            @test occursin("mwe_dev()", report)
+            # Verify the report shows the dev path
+            @test occursin(example_dir, report)
+        finally
+            Pkg.activate(original_project; io = devnull)
+        end
     end
 end

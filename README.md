@@ -1,6 +1,6 @@
 # MWEHelper
 
-[![CI](https://github.com/SebastianM-C/MWEHelper/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/SebastianM-C/MWEHelper/actions/workflows/CI.yml)
+[![CI](https://github.com/SebastianM-C/MWEHelper.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/SebastianM-C/MWEHelper.jl/actions/workflows/CI.yml)
 
 This package tries to make it easier to provide good MWEs when reporting bugs
 by automatically fetching the environment information and testing that your
